@@ -22,6 +22,11 @@ export default function App() {
             { pergunta: "Qual é a capital do Chile?", opcoes: ["Santiago", "Valparaíso", "Concepción"], correta: "Santiago" },
             { pergunta: "O deserto mais seco do mundo está no Chile. Qual é?", opcoes: ["Atacama", "Sahara", "Gobi"], correta: "Atacama" },
             { pergunta: "Qual é a montanha mais alta dos Andes Chilenos?", opcoes: ["Aconcágua", "Nevado Ojos del Salado", "Mont Blanc"], correta: "Nevado Ojos del Salado" }
+        ],
+        "Japão": [
+            { pergunta: "Qual é a capital do Japão?", opcoes: ["Tóquio", "Osaka", "Kyoto"], correta: "Tóquio" },
+            { pergunta: "O Japão é conhecido como a terra do?", opcoes: ["Sol Nascente", "Gelo Eterno", "Pôr do Sol"], correta: "Sol Nascente" },
+            { pergunta: "Qual é a montanha mais alta do Japão?", opcoes: ["Monte Fuji", "Monte Everest", "Monte Aso"], correta: "Monte Fuji" }
         ]
     };
 
