@@ -1,79 +1,209 @@
-import { useState, useEffect } from 'react';
-import { Platform, Text, View, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Text, View, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import * as Location from 'expo-location';
 import axios from 'axios';
 
-
 export default function App() {
-    const [latitude, setLatitude] = useState(0.0)
-    const [longitude, setLongitude] = useState(0.0)
-    const [altitude, setAltitude] = useState(0.0)
-    const [pais, setPais] = useState("")
+    // Estados para gerenciar o fluxo do aplicativo
+    const [pais, setPais] = useState(null); // Armazena o nome do país
+    const [tela, setTela] = useState("inicial"); // Define qual tela será exibida
+    const [perguntas, setPerguntas] = useState([]); // Perguntas do quiz
+    const [respostasUsuario, setRespostasUsuario] = useState({}); // Respostas do usuário
+    const [pontuacao, setPontuacao] = useState(null); // Pontuação do usuário
 
+    // Banco de perguntas para diferentes países
+    const perguntasPorPais = {
+        "Noruega": [
+            { pergunta: "Qual é a capital da Noruega?", opcoes: ["Oslo", "Bergen", "Trondheim"], correta: "Oslo" },
+            { pergunta: "Qual é o famoso fiorde norueguês?", opcoes: ["Geirangerfjord", "Milford Sound", "Fjordland"], correta: "Geirangerfjord" },
+            { pergunta: "Que animal é símbolo da Noruega?", opcoes: ["Rena", "Urso Polar", "Alce"], correta: "Rena" }
+        ],
+        "Chile": [
+            { pergunta: "Qual é a capital do Chile?", opcoes: ["Santiago", "Valparaíso", "Concepción"], correta: "Santiago" },
+            { pergunta: "O deserto mais seco do mundo está no Chile. Qual é?", opcoes: ["Atacama", "Sahara", "Gobi"], correta: "Atacama" },
+            { pergunta: "Qual é a montanha mais alta dos Andes Chilenos?", opcoes: ["Aconcágua", "Nevado Ojos del Salado", "Mont Blanc"], correta: "Nevado Ojos del Salado" }
+        ]
+    };
+
+    // Obtém a localização do usuário e identifica o país
     useEffect(() => {
-        var buscarPais = async (latitude, longitude) => {
-            const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
-            console.log(url)
-
-            try {
-                const response = await axios.get(url)
-                const address = response.data.address
-                
-                if (address && address.country) {
-                    return address.country; // Retorna o nome do país
-                }
-            } catch (error) {
-                console.error(error);
-            }
-        
-            return null;
-        }
-
-        var buscarCoordendadas = async () => {
+        const obterLocalizacao = async () => {
+            // Solicita permissão para acessar a localização
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                setErrorMsg('Sem premissão');
+                alert("Permissão de localização negada. O quiz não pode ser carregado.");
                 return;
             }
 
-            let location = await Location.getCurrentPositionAsync({})            
-            const lat = location.coords.latitude;
-            const long = location.coords.longitude;
-            const alt = location.coords.altitude;
+            // Obtém as coordenadas do usuário
+            const localizacao = await Location.getCurrentPositionAsync({});
+            const latitude = localizacao.coords.latitude;
+            const longitude = localizacao.coords.longitude;
 
-            setLatitude(lat);
-            setLongitude(long);
-            setAltitude(alt);
-            setPais( await buscarPais( lat, long ) )
-        }
-        buscarCoordendadas()
-        
-    }, [])
+            // Determina o país com base nas coordenadas
+            const nomePais = await obterPais(latitude, longitude);
+            if (nomePais && perguntasPorPais[nomePais]) {
+                setPais(nomePais); // Define o país atual
+                setPerguntas(perguntasPorPais[nomePais]); // Define as perguntas para o país
+            } else {
+                setPais(null); // Caso o país não tenha perguntas disponíveis
+            }
+        };
 
-    return (
-        <View style={styles.container}>
-            <Text style={styles.paragraph}>Coordenadas</Text>
-            <Text style={styles.paragraph}>Latitude:{latitude!=0?latitude:"..."}</Text>
-            <Text style={styles.paragraph}>Longitude:{longitude!=0?longitude:"..."}</Text>
-            <Text style={styles.paragraph}>Altitude:{altitude!=0?altitude:"..."}</Text>
-            <Text style={styles.paragraph}></Text>
-            <Text style={styles.paragraph}>Você esta no hemisfério {latitude<0?"Sul":"Norte"}</Text>
-            <Text style={styles.paragraph}>Você esta no hemisfério {longitude<0?"Ocidental":"Oriental"}</Text>
-            <Text style={styles.paragraph}></Text>
-            <Text style={styles.paragraph}>{pais?pais:"Carregando..."}</Text>
-        </View>
-    );
+        const obterPais = async (lat, lon) => {
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+                const resposta = await axios.get(url);
+                const paisObtido = resposta.data.address.country;
+                return paisObtido;
+            } catch (error) {
+                console.error(error);
+                return null;
+            }
+        };
+
+        obterLocalizacao();
+    }, []);
+
+    // Envia as respostas do usuário e calcula a pontuação
+    const enviarRespostas = () => {
+        let acertos = 0;
+
+        // Verifica quais respostas estão corretas
+        perguntas.forEach((p, i) => {
+            if (respostasUsuario[i] === p.correta) {
+                acertos++;
+            }
+        });
+
+        setPontuacao(acertos); // Define a pontuação final
+        setTela("resultado"); // Altera para a tela de resultados
+    };
+
+    // Tela inicial
+    if (tela === "inicial") {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.titulo}>Quiz Mundial</Text>
+                <Text style={styles.texto}>
+                    {pais ? `Você está no país: ${pais}` : "Detectando localização..."}
+                </Text>
+                <TouchableOpacity
+                    style={styles.botao}
+                    onPress={() => {
+                        if (perguntas.length > 0) {
+                            setTela("quiz");
+                        } else {
+                            alert("Desculpe, não temos perguntas para o seu país.");
+                        }
+                    }}
+                >
+                    <Text style={styles.textoBotao}>Iniciar Quiz</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    // Tela do quiz
+    if (tela === "quiz") {
+        return (
+            <View style={styles.container}>
+                <FlatList
+                    data={perguntas}
+                    renderItem={({ item, index }) => (
+                        <View style={styles.perguntaContainer}>
+                            <Text style={styles.perguntaTexto}>{item.pergunta}</Text>
+                            {item.opcoes.map((opcao, i) => (
+                                <TouchableOpacity
+                                    key={i}
+                                    style={[
+                                        styles.opcaoBotao,
+                                        respostasUsuario[index] === opcao && styles.opcaoSelecionada
+                                    ]}
+                                    onPress={() => setRespostasUsuario({ ...respostasUsuario, [index]: opcao })}
+                                >
+                                    <Text>{opcao}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
+                    keyExtractor={(_, index) => index.toString()}
+                />
+                <TouchableOpacity style={styles.botao} onPress={enviarRespostas}>
+                    <Text style={styles.textoBotao}>Enviar Respostas</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    // Tela de resultados
+    if (tela === "resultado") {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.titulo}>Resultado</Text>
+                <Text style={styles.texto}>
+                    Você acertou {pontuacao} de {perguntas.length} perguntas.
+                </Text>
+                <TouchableOpacity style={styles.botao} onPress={() => setTela("inicial")}>
+                    <Text style={styles.textoBotao}>Voltar ao Início</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    return null;
 }
 
+// Estilos do aplicativo
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        alignItems: 'center',
         justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#e8f5e9',
         padding: 20,
     },
-    paragraph: {
+    titulo: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        color: '#2e7d32',
+    },
+    texto: {
         fontSize: 18,
         textAlign: 'center',
+        marginBottom: 20,
+    },
+    botao: {
+        backgroundColor: '#2e7d32',
+        padding: 15,
+        borderRadius: 10,
+        marginTop: 20,
+        width: '60%',
+        alignItems: 'center',
+    },
+    textoBotao: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    perguntaContainer: {
+        marginBottom: 20,
+    },
+    perguntaTexto: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    opcaoBotao: {
+        backgroundColor: '#a5d6a7',
+        padding: 10,
+        marginVertical: 5,
+        borderRadius: 5,
+        alignItems: 'center',
+    },
+    opcaoSelecionada: {
+        backgroundColor: '#2e7d32',
     },
 });
