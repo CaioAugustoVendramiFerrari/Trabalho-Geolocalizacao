@@ -42,16 +42,20 @@ export default function App() {
 
             // Obtém as coordenadas do usuário
             const localizacao = await Location.getCurrentPositionAsync({});
+            console.log(localizacao);  // Verifique as coordenadas
             const latitude = localizacao.coords.latitude;
             const longitude = localizacao.coords.longitude;
 
             // Determina o país com base nas coordenadas
             const nomePais = await obterPais(latitude, longitude);
+            console.log(nomePais); // Verifique o país detectado
+
             if (nomePais && perguntasPorPais[nomePais]) {
                 setPais(nomePais); // Define o país atual
                 setPerguntas(perguntasPorPais[nomePais]); // Define as perguntas para o país
             } else {
-                setPais(null); // Caso o país não tenha perguntas disponíveis
+                setPais("Desconhecido"); // Caso o país não tenha perguntas
+                setPerguntas([]); // Não exibe perguntas se o país for desconhecido
             }
         };
 
@@ -59,22 +63,26 @@ export default function App() {
             try {
                 const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
                 const resposta = await axios.get(url);
-                const paisObtido = resposta.data.address.country;
-                return paisObtido;
+                console.log(resposta.data);  // Verifique a resposta da API
+                if (resposta.data && resposta.data.address && resposta.data.address.country) {
+                    return resposta.data.address.country;
+                } else {
+                    console.error('Não foi possível determinar o país com as coordenadas');
+                    return null;
+                }
             } catch (error) {
-                console.error(error);
+                console.error("Erro ao obter o país:", error);
                 return null;
             }
         };
 
         obterLocalizacao();
-    }, []);
+    }, []); // Apenas roda uma vez, quando o componente é montado
 
     // Envia as respostas do usuário e calcula a pontuação
     const enviarRespostas = () => {
         let acertos = 0;
-
-        // Verifica quais respostas estão corretas
+ // Verifica quais respostas estão corretas
         perguntas.forEach((p, i) => {
             if (respostasUsuario[i] === p.correta) {
                 acertos++;
@@ -121,10 +129,7 @@ export default function App() {
                             {item.opcoes.map((opcao, i) => (
                                 <TouchableOpacity
                                     key={i}
-                                    style={[
-                                        styles.opcaoBotao,
-                                        respostasUsuario[index] === opcao && styles.opcaoSelecionada
-                                    ]}
+                                    style={[styles.opcaoBotao, respostasUsuario[index] === opcao && styles.opcaoSelecionada]}
                                     onPress={() => setRespostasUsuario({ ...respostasUsuario, [index]: opcao })}
                                 >
                                     <Text>{opcao}</Text>
@@ -158,7 +163,6 @@ export default function App() {
 
     return null;
 }
-
 // Estilos do aplicativo
 const styles = StyleSheet.create({
     container: {
