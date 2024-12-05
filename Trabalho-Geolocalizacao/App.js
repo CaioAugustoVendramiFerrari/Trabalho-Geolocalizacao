@@ -13,7 +13,7 @@ export default function App() {
 
     // Banco de perguntas para diferentes países
     const perguntasPorPais = {
-        "Noruega": [
+        "Norge": [
             { pergunta: "Qual é a capital da Noruega?", opcoes: ["Oslo", "Bergen", "Trondheim"], correta: "Oslo" },
             { pergunta: "Qual é o famoso fiorde norueguês?", opcoes: ["Geirangerfjord", "Milford Sound", "Fjordland"], correta: "Geirangerfjord" },
             { pergunta: "Que animal é símbolo da Noruega?", opcoes: ["Rena", "Urso Polar", "Alce"], correta: "Rena" }
@@ -23,7 +23,7 @@ export default function App() {
             { pergunta: "O deserto mais seco do mundo está no Chile. Qual é?", opcoes: ["Atacama", "Sahara", "Gobi"], correta: "Atacama" },
             { pergunta: "Qual é a montanha mais alta dos Andes Chilenos?", opcoes: ["Aconcágua", "Nevado Ojos del Salado", "Mont Blanc"], correta: "Nevado Ojos del Salado" }
         ],
-        "Japão": [
+        "日本": [
             { pergunta: "Qual é a capital do Japão?", opcoes: ["Tóquio", "Osaka", "Kyoto"], correta: "Tóquio" },
             { pergunta: "O Japão é conhecido como a terra do?", opcoes: ["Sol Nascente", "Gelo Eterno", "Pôr do Sol"], correta: "Sol Nascente" },
             { pergunta: "Qual é a montanha mais alta do Japão?", opcoes: ["Monte Fuji", "Monte Everest", "Monte Aso"], correta: "Monte Fuji" }
